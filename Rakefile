@@ -141,7 +141,7 @@ namespace "docker" do
   multitask :builds
 
   %w[ri ri-msys].each do |package|
-    %w[x86 x64].each do |arch|
+    %w[x86 x64 aarch64].each do |arch|
       task "#{package}-#{arch}" => :image do
         # Use the cache of our main MSYS2 environment for package install
         cachedir = File.expand_path("../cache/#{package}-#{arch}", __FILE__)

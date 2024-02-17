@@ -1,6 +1,9 @@
 recipes/installer-inno/filelist-*.iss
 recipes/sandbox/ruby-*
 recipes/unpack/ruby-*
+packages/ri/recipes/sandbox/*
+packages/ri/recipes/unpack/*
+packages/ri/recipes/installer-inno/*
 *.7z
 *.dll
 *.exe

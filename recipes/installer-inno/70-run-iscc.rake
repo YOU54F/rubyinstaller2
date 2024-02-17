@@ -2,7 +2,8 @@ file installer_exe => (sandbox_task.sandboxfiles + [iss_compiler.result_filename
   tries = 10
   loop do
     ok, res = sh "cmd", "/c", "iscc", iss_compiler.result_filename, "/Q", "/O#{File.dirname(installer_exe)}", "/F#{File.basename(installer_exe, ".exe")}" do |ok_, res_|
-      [ok_, res_]
+    # ok, res = sh "cmd", "/c", "c:\\Program Files (x86)\\Inno Setup 6\\iscc", iss_compiler.result_filename, "/Q", "/O#{File.dirname(installer_exe)}", "/F#{File.basename(installer_exe, ".exe")}" do |ok_, res_|
+    [ok_, res_]
     end
     if !ok
       if (tries-=1) > 0 && res.exitstatus == 2

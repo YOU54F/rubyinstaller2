@@ -22,7 +22,14 @@ class RubyPackage < RubyInstaller::Build::Openstruct
       self.msysdir = "msys64"
       self.mingwdir = "ucrt64"
       self.packagenamearch = self.rubyver2 < "3.1" ? "x64-ucrt" : "x64"
-      self.default_instdir = "C:\\Ruby#{rubyver2.gsub(".","")}-x64"
+    when 'aarch64-ucrt'
+      self.pacman_arch = "mingw-w64-clang-aarch64"
+      self.ruby_arch = "aarch64-mingw-ucrt"
+      self.msys_arch = "aarch64"
+      self.msysdir = "clangarm64"
+      self.mingwdir = "ucrt64"
+      self.packagenamearch = self.rubyver2 < "3.1" ? "aarch64-ucrt" : "aarch64"
+      self.default_instdir = "C:\\Ruby#{rubyver2.gsub(".","")}-aarch64"
     when 'x64-msvcrt'
       self.pacman_arch = "mingw-w64-x86_64"
       self.ruby_arch = "x64-mingw32"
@@ -50,13 +57,13 @@ end
 
 ovl_glob('recipes/*/task.rake').each{|f| load(ovl_expand_file(f)) }
 
-ruby_arch_packages = %w[x64-ucrt].map do |arch|
-  %w[3.1.4-1 3.2.3-1 3.3.0-1 head].map do |packagever|
+ruby_arch_packages = %w[x64-ucrt aarch64-ucrt].map do |arch|
+  %w[3.1.4-2 3.2.3-1 3.3.0-1 head].map do |packagever|
     RubyPackage.new( packagever: packagever, arch: arch, rootdir: __dir__ ).freeze
   end
 end
 ruby_arch_packages += %w[x64-msvcrt x86-msvcrt].map do |arch|
-  %w[2.4.10-2 2.5.9-1 2.6.10-1 2.7.8-1 3.0.6-1 3.1.4-1 3.2.3-1 3.3.0-1 head].map do |packagever|
+  %w[2.4.10-2 2.5.9-1 2.6.10-1 2.7.8-1 3.0.6-1 3.1.4-2 3.2.3-1 3.3.0-1 head].map do |packagever|
     RubyPackage.new( packagever: packagever, arch: arch, rootdir: __dir__ ).freeze
   end
 end

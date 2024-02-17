@@ -1,7 +1,8 @@
 # Move bundled RubyInstaller DLLs to a subdirectory.
 # This avoids interferences with other apps when ruby.exe is in the PATH.
-
-libruby_regex = /(msvcrt|ucrt)-ruby\d+\.dll$/i
+#aarch64-ucrt-ruby330
+libruby_regex = /(msvcrt|ucrt)-ruby\d+\.dll|(ruby\d+\.dll)$/i
+# libruby_regex = /(msvcrt|ucrt|lib)-(ruby\d+\.dll|(msvcrt|ucrt|lib)-ruby\d+\.dll.a)$/i
 bin_dir = File.join(sandboxdir, "bin")
 dlls_dir = File.join(sandboxdir, "bin/ruby_builtin_dlls")
 directory bin_dir
@@ -26,15 +27,28 @@ end
 
 # Add a custom manifest to both ruby.exe and rubyw.exe, so that they find the DLLs to be moved
 self.sandboxfiles.select do |destpath|
-  destpath =~ /\/rubyw?\.exe$/i
+destpath =~ /\/rubyw?\.exe$/i
 end.each do |destpath|
-  file destpath => [destpath.sub(sandboxdir, unpackdirmgw), bin_dir] do |t|
+    file destpath => [destpath.sub(sandboxdir, unpackdirmgw), bin_dir] do |t|
     puts "patching manifest of #{t.name}"
     libruby = File.basename(self.sandboxfiles.find{|a| a=~libruby_regex })
-
     image = File.binread(t.prerequisites.first)
     # The XML elements we want to add to the default MINGW manifest:
-    new = <<-EOT
+
+    if RUBY_PLATFORM == 'aarch64-mingw-ucrt'
+      puts libruby
+      new = <<-EOT
+      <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+        <dependency>
+          <dependentAssembly>
+            <assemblyIdentity version="1.0.0.0" type="win32" name="ruby_builtin_dlls" />
+          </dependentAssembly>
+        </dependency>
+        <file name="#{ libruby }"/>
+      </assembly>
+      EOT
+    else
+      new = <<-EOT
       <application xmlns="urn:schemas-microsoft-com:asm.v3">
         <windowsSettings xmlns:ws2="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
           <ws2:longPathAware>true</ws2:longPathAware>
@@ -46,22 +60,28 @@ end.each do |destpath|
         </dependentAssembly>
       </dependency>
       <file name="#{ libruby }"/>
-    EOT
-
-    # There are two regular options to add a custom manifest:
-    # 1. Change a given exe file per Microsofts "mt.exe" after the build
-    # 2. Specify a the manifest while linking with the MINGW toolchain
-    #
+      EOT
+    end
+# There are two regular options to add a custom manifest:
+# 1. Change a given exe file per Microsofts "mt.exe" after the build
+# 2. Specify a the manifest while linking with the MINGW toolchain
+#
     # Since we don't want to depend on particular Microsoft tools and want to avoid additional patching of the ruby build, we do a nifty trick here.
-    # We patch the exe file manually.
-    # Removing unnecessary spaces and comments from the embedded XML manifest gives us enough space to add the above XML elements.
-    # Then the default MINGW manifest gets replaced by our custom XML content.
-    # The rest of the available bytes is simply padded with spaces, so that we don't change positions within the EXE image.
-    image.gsub!(/<\?xml.*?<assembly.*?<\/assembly>\n/m) do |m|
-      newm = m.gsub(/^\s*<\/assembly>\s*$/, new + "</assembly>")
-        .gsub(/<!--.*?-->/m, "")
-        .gsub(/^ +/, "")
-        .gsub(/\n+/m, "\n")
+# We patch the exe file manually.
+# Removing unnecessary spaces and comments from the embedded XML manifest gives us enough space to add the above XML elements.
+# Then the default MINGW manifest gets replaced by our custom XML content.
+# The rest of the available bytes is simply padded with spaces, so that we don't change positions within the EXE image.
+
+  image.gsub!(/<\?xml.*?<assembly.*?<\/assembly>\n/m) do |m|
+      if RUBY_PLATFORM == 'aarch64-mingw-ucrt'
+        newm = new
+      else
+        newm = m.gsub(/^\s*<\/assembly>\s*$/, new + "</assembly>")
+          .gsub(/<!--.*?-->/m, "")
+          .gsub(/^ +/, "")
+          .gsub(/\n+/m, "\n")
+      end
+
 
       raise "replacement manifest to big #{m.bytesize} < #{newm.bytesize}" if m.bytesize < newm.bytesize
       newm + " " * (m.bytesize - newm.bytesize)

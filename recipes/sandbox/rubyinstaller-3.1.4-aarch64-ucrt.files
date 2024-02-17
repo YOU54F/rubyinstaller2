@@ -1,0 +1,8 @@
+bin/libcrypto-3.dll
+bin/libssl-3.dll
+bin/ruby310.dll
+lib/libruby310.dll.a
+lib/engines-3/capi.dll
+lib/engines-3/loader_attic.dll
+lib/engines-3/padlock.dll
+lib/ossl-modules/legacy.dll
